@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VBT Analyzer</title>
+<style>
+:root{
+  --bg:#0d1117;--surface:#151b23;--surface2:#1e2631;--border:#2b3544;--text:#e6edf3;--muted:#8b98a9;--dim:#5b6778;
+  --accent:#3b82f6;--accent-h:#2f6fdb;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+.hidden{display:none!important}
+button,select,input{font:inherit;color:inherit}
+button{background:var(--surface2);border:0;border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600}
+button:hover:not(:disabled){background:var(--border)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.accent{background:var(--accent);color:#fff}button.accent:hover:not(:disabled){background:var(--accent-h)}
+button.danger{background:var(--danger);color:#fff}
+button.ghost{background:var(--surface);color:var(--muted);font-weight:500;padding:7px 11px}
+button.ghost:hover:not(:disabled){background:var(--surface2)}
+input[type=text],input[type=number],select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;color:var(--text);min-width:0}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+.chip{background:var(--surface2);color:var(--muted);border-radius:6px;padding:3px 9px;font-size:12px;white-space:nowrap}
+.chip.live{background:var(--danger);color:#fff}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px}
+
+/* ---------- inicio ---------- */
+#inicio{max-width:640px;margin:0 auto;padding:36px 18px}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+.logo{width:54px;height:54px;background:var(--accent);position:relative;flex:none}
+.logo i{position:absolute;background:#fff}
+.brand h1{margin:0;font-size:22px}.brand p{margin:0;color:var(--muted)}
+#inicio .card{padding:24px}
+#inicio h2{margin:0 0 4px;font-size:16px}
+.fila{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.fila>*{flex:1 1 auto}
+.nota{color:var(--dim);font-size:12.5px;margin-top:14px}
+.sep{height:1px;background:var(--border);margin:22px 0}
+#msgInicio{margin-top:12px;color:var(--warn);min-height:18px}
+
+/* ---------- análisis ---------- */
+#app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border);padding:8px 14px}
+.topbar .titulo{font-weight:700;font-size:15px;margin:0 6px}
+.topbar .sp{flex:1}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;padding:16px;flex:1}
+@media(max-width:960px){.main{grid-template-columns:1fr}}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;margin-bottom:12px}
+.banner .dot{font-size:11px;margin-top:4px}
+.stage{position:relative;background:#000;border:1px solid var(--border);line-height:0}
+.stage video{width:100%;height:auto;display:block;max-height:68vh;object-fit:contain;background:#000}
+.stage canvas{position:absolute;left:0;top:0;width:100%;height:100%;cursor:default;touch-action:none}
+.controles{display:flex;gap:8px;align-items:center;margin-top:10px}
+.controles input[type=range]{flex:1;accent-color:var(--accent)}
+.sub{color:var(--muted);font-size:12.5px;margin-top:6px}
+.paso{padding:12px 14px;margin-bottom:10px}
+.paso .cab{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.badge{width:26px;height:26px;border-radius:50%;background:var(--surface2);color:var(--muted);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.paso.activo .badge{background:var(--accent);color:#fff}.paso.hecho .badge{background:var(--ok);color:#fff}
+.paso .t{font-weight:700}.paso .s{margin-left:auto;color:var(--muted);font-size:12px}
+.paso.hecho .s{color:var(--ok)}
+.paso.pendiente .t{color:var(--muted)}
+.paso .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.paso .row>button{flex:1}
+.paso small{color:var(--dim);display:block;margin:4px 0 8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
+.kpi{background:var(--surface2);border-radius:8px;padding:8px 10px}
+.kpi b{display:block;font-size:17px}.kpi span{font-size:10.5px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--muted);font-weight:600;font-size:11.5px;text-align:center;padding:6px 3px;background:var(--surface)}
+td{text-align:center;padding:6px 3px;border-top:1px solid var(--border)}
+.tw{background:var(--surface2);border-radius:8px;max-height:230px;overflow:auto}
+tr.warn td{color:var(--warn)}tr.bad td{color:var(--danger)}
+.statusbar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;background:var(--surface);border-top:1px solid var(--border);padding:7px 16px;color:var(--muted);font-size:12.5px}
+.statusbar .sp{flex:1}
+progress{width:180px;height:8px;accent-color:var(--accent)}
+
+/* ---------- gráficos ---------- */
+#graficos{padding:16px;max-width:1100px;margin:0 auto;width:100%}
+#graficos canvas{width:100%;display:block;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.leyenda{color:var(--muted);font-size:12.5px;margin:10px 0}
+
+dialog{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:20px 24px;max-width:520px;width:92vw}
+dialog::backdrop{background:#000a}
+.campo{margin-top:14px}.campo label{font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.campo p{margin:3px 0 0;color:var(--dim);font-size:12.5px}
+</style>
+</head>
+<body>
+
+<!-- ======================= INICIO ======================= -->
+<div id="inicio">
+  <div class="brand">
+    <div class="logo"><i style="left:11px;top:25px;width:32px;height:3px"></i><i style="left:13px;top:15px;width:5px;height:24px"></i><i style="left:36px;top:15px;width:5px;height:24px"></i></div>
+    <div><h1>VBT Analyzer</h1><p>Velocity Based Training · análisis de velocidad de la barra</p></div>
+  </div>
+  <div class="card">
+    <h2>Selecciona un origen para comenzar</h2>
+    <div class="sub">Todo se procesa en tu dispositivo: el video no se sube a ningún servidor.</div>
+    <div class="fila">
+      <button id="btnVideo" class="accent">Seleccionar video…</button>
+      <input id="fileVideo" type="file" accept="video/*" class="hidden">
+    </div>
+    <div class="sep"></div>
+    <div class="fila">
+      <select id="selCam" style="flex:2"><option value="">Cámara predeterminada</option><option value="environment">Trasera (celular)</option><option value="user">Frontal</option></select>
+      <button id="btnCam" class="accent" style="flex:1">Usar CÁMARA EN VIVO</button>
+    </div>
+    <div class="fila" style="margin-top:6px"><button id="btnDetectar" class="ghost" style="flex:0 0 auto">Detectar cámaras</button>
+      <span id="estadoCam" class="chip" style="flex:0 0 auto">Permiso de cámara: sin consultar</span></div>
+    <div class="fila"><button id="btnGrabar">📱 Grabar con la cámara del celular</button>
+      <input id="fileGrabar" type="file" accept="video/*" capture="environment" class="hidden"></div>
+    <div class="nota" style="margin-top:6px">«Grabar con la cámara del celular» abre la cámara nativa del teléfono (puedes usar 60 FPS o cámara lenta) y analiza el video al terminar. No requiere permisos del navegador.</div>
+    <div id="msgInicio"></div>
+    <div class="fila" style="margin-top:6px"><button id="btnDiag" class="ghost" style="flex:0 0 auto">🔧 Diagnóstico de cámara</button></div>
+    <pre id="diagTxt" class="hidden" style="white-space:pre-wrap;word-break:break-word;background:var(--surface2);border-radius:8px;padding:10px;font-size:12px;color:var(--muted);margin:8px 0 0"></pre>
+    <div class="nota">Para validar: 60 FPS o más, trípode fijo, cámara perpendicular y sin estabilización de video. Usa Chrome o Edge.<br>
+    Si el navegador no deja abrir la cámara desde el archivo, abre una terminal en esta carpeta, ejecuta <code>python -m http.server 8000</code> y entra a <code>http://localhost:8000</code>.</div>
+  </div>
+</div>
+
+<!-- ======================= ANÁLISIS ======================= -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <button id="btnVolver" class="ghost">←  Volver al inicio</button>
+    <span class="titulo">VBT Analyzer</span><span id="chipOrigen" class="chip"></span>
+    <span class="sp"></span>
+    <span id="chipRes" class="chip"></span><span id="chipFps" class="chip"></span>
+    <button id="btnAjustes" class="ghost">⚙  Ajustes</button>
+    <button id="btnGraf" class="ghost" disabled>Ir a los gráficos  →</button>
+    <button id="btnReiniciar" class="ghost">Reiniciar análisis</button>
+  </div>
+
+  <div id="vistaAnalisis" class="main">
+    <div>
+      <div class="card banner"><span id="bannerDot" class="dot" style="color:var(--accent)">●</span><span id="bannerTxt"></span></div>
+      <div class="stage" id="stage">
+        <video id="vid" playsinline muted></video>
+        <canvas id="ov"></canvas>
+      </div>
+      <div class="controles" id="ctrlVideo">
+        <button id="btnAtras" class="ghost">‹</button>
+        <input id="slider" type="range" min="0" max="1" step="0.01" value="0">
+        <button id="btnAdel" class="ghost">›</button>
+      </div>
+      <div class="sub" id="lblFrame"></div>
+      <div class="sub" id="lblAyuda"></div>
+    </div>
+
+    <div>
+      <div class="card paso activo" id="paso1">
+        <div class="cab"><span class="badge">1</span><span class="t">Calibrar escala</span><span class="s" id="s1"></span></div>
+        <div class="row">Longitud de referencia <input id="ref" type="number" step="0.01" min="0.01" value="0.45" style="width:80px"> m</div>
+        <small>Disco olímpico estándar = 0.45 m</small>
+        <div class="row"><button id="btnCalib">Calibrar (2 clics en la imagen)</button></div>
+      </div>
+      <div class="card paso pendiente" id="paso2">
+        <div class="cab"><span class="badge">2</span><span class="t">Seleccionar el marcador</span><span class="s" id="s2"></span></div>
+        <small>Toca directamente el extremo de la barra (o arrastra un recuadro sobre ella). Funciona con cinta de color o directamente sobre la barra.</small>
+        <div class="row"><button id="btnRoi" disabled>Seleccionar marcador</button></div>
+      </div>
+      <div class="card paso pendiente" id="paso3">
+        <div class="cab"><span class="badge">3</span><span class="t">Rastreo y análisis</span><span class="s" id="s3"></span></div>
+        <div class="row" id="filaVel"><span style="color:var(--muted)">Velocidad de reproducción</span>
+          <select id="selVel"><option value="0.25">0.25×</option><option value="0.5" selected>0.5×</option><option value="1">1×</option></select></div>
+        <div class="row" style="margin-top:8px"><button id="btnTrack" class="accent" disabled style="flex:3">Iniciar rastreo</button><button id="btnStop" class="danger" disabled style="flex:2">Detener</button></div>
+      </div>
+
+      <div class="card" style="padding:12px 14px">
+        <b style="font-size:15px">Resultados</b>
+        <div class="sub" style="margin:2px 0 6px;color:var(--dim);font-size:11.5px">Velocidades en m/s · VM = ROM ÷ tiempo concéntrico · VMP = fase propulsiva · VP = pico</div>
+        <div class="kpis">
+          <div class="kpi"><b id="kReps">—</b><span>REPS</span></div>
+          <div class="kpi"><b id="kVm">—</b><span>VM MEDIA</span></div>
+          <div class="kpi"><b id="kVmax">—</b><span>VM MÁX</span></div>
+          <div class="kpi"><b id="kPerd">—</b><span>PÉRD. VEL.</span></div>
+        </div>
+        <div class="tw"><table><thead><tr><th>Rep</th><th>VM</th><th>VMP</th><th>VP</th><th>ROM m</th><th>Pérd. %</th></tr></thead><tbody id="tbody"></tbody></table></div>
+        <div class="row" style="display:flex;gap:6px;margin-top:10px">
+          <button id="btnGraf2" disabled style="flex:1">Gráficos</button>
+          <button id="btnCsv" disabled style="flex:1">CSV reps</button>
+          <button id="btnSerie" disabled style="flex:1">CSV serie</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="graficos" class="hidden">
+    <div class="leyenda" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <button id="btnVolverAn">←  Volver al análisis</button>
+      <span>Verde: pérdida &lt; 20 %  ·  Ámbar: 20–35 %  ·  Rojo: ≥ 35 %</span>
+      <span class="sp" style="flex:1"></span><button id="btnImg" class="accent">Guardar imagen</button>
+    </div>
+    <canvas id="cvGraf" width="1100" height="860"></canvas>
+  </div>
+
+  <div class="statusbar"><span id="lblTracker">Tracker: —</span><span id="lblDiag"></span><span class="sp"></span><span id="lblPct"></span><progress id="prog" value="0" max="100"></progress></div>
+</div>
+
+<!-- ======================= PERMISO CÁMARA ======================= -->
+<dialog id="dlgPermiso">
+  <b style="font-size:16px">¿Permitir el acceso a la cámara?</b>
+  <p style="color:var(--muted)">VBT Analyzer necesita usar la cámara para analizar el movimiento de la barra en vivo. El video se procesa solo en este dispositivo y no se envía a ningún servidor.</p>
+  <p style="color:var(--dim);font-size:12.5px">Al continuar, tu navegador mostrará su propio aviso: elige <b>Permitir</b> (o «Mientras se usa la app»).</p>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button id="pNo">Ahora no</button><button id="pSi" class="accent">Continuar</button></div>
+</dialog>
+
+<!-- ======================= AJUSTES ======================= -->
+<dialog id="dlgAjustes">
+  <b style="font-size:16px">Ajustes de análisis</b>
+  <div class="campo"><label>Ventana de suavizado (s) <input id="aSuav" type="number" step="0.01" min="0.05" max="0.6" style="width:90px"></label>
+    <p>Filtro Savitzky-Golay. Más pequeña conserva mejor los picos pero deja más ruido; más grande suaviza más pero recorta la velocidad pico. Prueba entre 0.15 y 0.25 s.</p></div>
+  <div class="campo"><label>Pérdida de velocidad sobre
+    <select id="aBase"><option value="vm">VM (media concéntrica)</option><option value="vmp">VMP (media propulsiva)</option></select></label>
+    <p>VM = ROM ÷ tiempo concéntrico (lo que entrega un encoder). VMP = media hasta que la aceleración baja de −g.</p></div>
+  <div class="campo"><label>ROM mínimo por repetición (m) <input id="aRom" type="number" step="0.01" min="0.02" max="1" style="width:90px"></label>
+    <p>Recorrido vertical mínimo para contar una repetición. Bájalo si haces recorridos parciales.</p></div>
+  <div class="campo"><label>Factor de tiempo (solo videos) <input id="aFactor" type="number" step="0.1" min="0.1" style="width:90px"></label>
+    <p>Déjalo en 1. Si grabaste en cámara lenta (p. ej. 240 FPS reproducidos a 30), usa 8: el tiempo real es el del video ÷ factor.</p></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><button id="aCerrar">Cerrar</button><button id="aAplicar" class="accent">Aplicar</button></div>
+</dialog>
+
+<script>
+// ==== NÚCLEO DE CÁLCULO (puro, sin interfaz) — port del núcleo Python ====
+const G = 9.81;
+const SUAV_DEF = 0.20;      // ventana Savitzky-Golay (s)
+const ROM_MIN_DEF = 0.10;   // recorrido mínimo por repetición (m)
+const V_MIN_REP = 0.05;     // velocidad pico mínima para aceptar una repetición (m/s)
+const V_INICIO = 0.02;      // barra considerada detenida bajo esta velocidad (m/s)
+
+function mediana(a) {
+  const b = Array.from(a).sort((x, y) => x - y), n = b.length;
+  return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2;
+}
+
+function resolver(A, b) {            // eliminación gaussiana n×n
+  const n = b.length;
+  A = A.map(r => r.slice()); b = b.slice();
+  for (let i = 0; i < n; i++) {
+    let p = i;
+    for (let r = i + 1; r < n; r++) if (Math.abs(A[r][i]) > Math.abs(A[p][i])) p = r;
+    [A[i], A[p]] = [A[p], A[i]]; [b[i], b[p]] = [b[p], b[i]];
+    for (let r = i + 1; r < n; r++) {
+      const f = A[r][i] / A[i][i];
+      for (let c = i; c < n; c++) A[r][c] -= f * A[i][c];
+      b[r] -= f * b[i];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n - 1; i >= 0; i--) {
+    let s = b[i];
+    for (let c = i + 1; c < n; c++) s -= A[i][c] * x[c];
+    x[i] = s / A[i][i];
+  }
+  return x;
+}
+
+// Savitzky-Golay con derivadas analíticas (valor, 1ª y 2ª derivada respecto a la muestra).
+// Los bordes se ajustan con el polinomio de la primera/última ventana (igual que scipy mode="interp").
+function sgFiltro(y, w, po) {
+  const n = y.length, m = (w - 1) / 2, K = po + 1;
+  const xs = []; for (let j = 0; j < w; j++) xs.push(j - m);
+  const AtA = Array.from({ length: K }, () => new Array(K).fill(0));
+  for (let a = 0; a < K; a++) for (let b = 0; b < K; b++) {
+    let s = 0; for (let j = 0; j < w; j++) s += Math.pow(xs[j], a + b); AtA[a][b] = s;
+  }
+  const Minv = Array.from({ length: K }, () => new Array(K));
+  for (let c = 0; c < K; c++) {
+    const e = new Array(K).fill(0); e[c] = 1;
+    const col = resolver(AtA, e);
+    for (let r = 0; r < K; r++) Minv[r][c] = col[r];
+  }
+  const P = Array.from({ length: K }, () => new Float64Array(w));
+  for (let k = 0; k < K; k++) for (let j = 0; j < w; j++) {
+    let s = 0; for (let a = 0; a < K; a++) s += Minv[k][a] * Math.pow(xs[j], a); P[k][j] = s;
+  }
+  const beta = (i0) => {
+    const b = new Array(K).fill(0);
+    for (let k = 0; k < K; k++) { let s = 0; for (let j = 0; j < w; j++) s += P[k][j] * y[i0 + j]; b[k] = s; }
+    return b;
+  };
+  const ev = (b, x) => {
+    let v = 0, d1 = 0, d2 = 0;
+    for (let k = 0; k < K; k++) {
+      v += b[k] * Math.pow(x, k);
+      if (k >= 1) d1 += k * b[k] * Math.pow(x, k - 1);
+      if (k >= 2) d2 += k * (k - 1) * b[k] * Math.pow(x, k - 2);
+    }
+    return [v, d1, d2];
+  };
+  const o0 = new Float64Array(n), o1 = new Float64Array(n), o2 = new Float64Array(n);
+  for (let i = m; i <= n - m - 1; i++) {
+    const b = beta(i - m); o0[i] = b[0]; o1[i] = b[1]; o2[i] = 2 * (K > 2 ? b[2] : 0);
+  }
+  const bL = beta(0), bR = beta(n - w);
+  for (let i = 0; i < m; i++) { const r = ev(bL, i - m); o0[i] = r[0]; o1[i] = r[1]; o2[i] = r[2]; }
+  for (let i = n - m; i < n; i++) { const r = ev(bR, i - (n - w) - m); o0[i] = r[0]; o1[i] = r[1]; o2[i] = r[2]; }
+  return [o0, o1, o2];
+}
+
+// Re-muestrea a malla uniforme (tiempo real), suaviza y deriva.
+function prepararSerie(t, y, suavS) {
+  if (suavS === undefined) suavS = SUAV_DEF;
+  const tt = [], yy = [];
+  for (let i = 0; i < t.length; i++) if (isFinite(t[i]) && isFinite(y[i])) { tt.push(t[i]); yy.push(y[i]); }
+  if (tt.length < 8) return null;
+  const t2 = [tt[0]], y2 = [yy[0]];
+  for (let i = 1; i < tt.length; i++) if (tt[i] > t2[t2.length - 1]) { t2.push(tt[i]); y2.push(yy[i]); }
+  if (t2.length < 8) return null;
+  const dts = []; for (let i = 1; i < t2.length; i++) dts.push(t2[i] - t2[i - 1]);
+  const dt = mediana(dts);
+  if (!(dt > 0)) return null;
+  const n = Math.floor((t2[t2.length - 1] - t2[0]) / dt) + 1;
+  const tu = new Float64Array(n), yu = new Float64Array(n);
+  let j = 0;
+  for (let i = 0; i < n; i++) {
+    const ti = t2[0] + dt * i; tu[i] = ti - t2[0];
+    while (j < t2.length - 2 && t2[j + 1] < ti) j++;
+    const f = (ti - t2[j]) / (t2[j + 1] - t2[j]);
+    yu[i] = y2[j] + Math.min(Math.max(f, 0), 1) * (y2[j + 1] - y2[j]);
+  }
+  let w = Math.max(Math.round(suavS / dt), 5);
+  if (w % 2 === 0) w += 1;
+  if (w > n) w = (n % 2 === 1) ? n : n - 1;
+  if (w < 5) return null;
+  const [ys, d1, d2] = sgFiltro(yu, w, 3);
+  const v = new Float64Array(n), a = new Float64Array(n);
+  let ss = 0;
+  for (let i = 0; i < n; i++) { v[i] = d1[i] / dt; a[i] = d2[i] / (dt * dt); ss += (yu[i] - ys[i]) ** 2; }
+  return { t: tu, y_raw: yu, y: ys, v, a, dt, fps: 1 / dt, ventana: w,
+           ruido_mm: Math.sqrt(ss / n) * 1000, hueco_max_s: Math.max(...dts) };
+}
+
+// scipy.signal.find_peaks (distance, luego prominence)
+function buscarPicos(x, prominencia, distancia) {
+  const n = x.length; let picos = [];
+  let i = 1;
+  while (i < n - 1) {
+    if (x[i - 1] < x[i]) {
+      let ah = i + 1;
+      while (ah < n - 1 && x[ah] === x[i]) ah++;
+      if (x[ah] < x[i]) { picos.push(Math.floor((i + ah - 1) / 2)); i = ah; }
+    }
+    i++;
+  }
+  if (distancia > 1 && picos.length > 1) {
+    const orden = picos.map((_, k) => k).sort((a, b) => x[picos[a]] - x[picos[b]]);
+    const keep = new Array(picos.length).fill(true);
+    for (let oi = orden.length - 1; oi >= 0; oi--) {
+      const jx = orden[oi];
+      if (!keep[jx]) continue;
+      let k = jx - 1;
+      while (k >= 0 && picos[jx] - picos[k] < distancia) { keep[k] = false; k--; }
+      k = jx + 1;
+      while (k < picos.length && picos[k] - picos[jx] < distancia) { keep[k] = false; k++; }
+    }
+    picos = picos.filter((_, k) => keep[k]);
+  }
+  return picos.filter(p => {
+    let lm = x[p], i2 = p;
+    while (i2 >= 0 && x[i2] <= x[p]) { if (x[i2] < lm) lm = x[i2]; i2--; }
+    let rm = x[p]; i2 = p;
+    while (i2 < n && x[i2] <= x[p]) { if (x[i2] < rm) rm = x[i2]; i2++; }
+    return x[p] - Math.max(lm, rm) >= prominencia;
+  });
+}
+
+// VM = ROM/duración concéntrica, VMP = media propulsiva (hasta a < -g), VP = pico.
+function detectarReps(ser, romMin, parcial) {
+  if (romMin === undefined) romMin = ROM_MIN_DEF;
+  const { t, y, v, a, dt } = ser, n = y.length, pad = 15;
+  const yp = new Float64Array(n + 2 * pad);
+  for (let i = 0; i < yp.length; i++) yp[i] = y[Math.min(Math.max(i - pad, 0), n - 1)];
+  const neg = yp.map(q => -q);
+  const dist = Math.max(Math.floor(0.6 / dt), 1);
+  const clip = (i) => Math.min(Math.max(i - pad, 0), n - 1);
+  let valles = buscarPicos(neg, romMin, dist).map(clip);
+  const picos = buscarPicos(yp, romMin, dist).map(clip);
+  if (picos.length > 0 && (valles.length === 0 || valles[0] > picos[0])) {
+    let iMin = 0;
+    for (let i = 0; i <= picos[0]; i++) if (y[i] < y[iMin]) iMin = i;
+    if (y[picos[0]] - y[iMin] >= romMin) valles.unshift(iMin);
+  }
+  const reps = [];
+  for (let k = 0; k < valles.length; k++) {
+    const i0 = valles[k];
+    const post = picos.filter(p => p > i0);
+    const sig = k + 1 < valles.length ? valles[k + 1] : null;
+    let i1;
+    if (post.length > 0) {
+      i1 = post[0];
+      if (sig !== null && sig < i1) continue;
+    } else if (!parcial && sig === null && i0 < n - Math.floor(0.4 / dt)) {
+      i1 = i0; for (let i = i0; i < n; i++) if (y[i] > y[i1]) i1 = i;
+    } else continue;
+    let kPk = 0, vp = -Infinity;
+    for (let i = i0; i <= i1; i++) if (v[i] > vp) { vp = v[i]; kPk = i - i0; }
+    if (vp <= V_MIN_REP) continue;
+    let k0 = 0;
+    for (let i = kPk; i >= 0; i--) if (v[i0 + i] <= V_INICIO) { k0 = i; break; }
+    let k1 = i1 - i0;
+    for (let i = kPk; i <= i1 - i0; i++) if (v[i0 + i] <= V_INICIO) { k1 = i; break; }
+    const j0 = i0 + k0, j1 = i0 + k1;
+    const rom = y[j1] - y[j0], dur = t[j1] - t[j0];
+    if (rom < 0.9 * romMin || dur <= 0) continue;
+    const kp = kPk - k0;
+    let kFin = j1 - j0;
+    for (let i = kp; i <= j1 - j0; i++) if (a[j0 + i] < -G) { kFin = i; break; }
+    let s = 0; for (let i = 0; i <= kFin; i++) s += v[j0 + i];
+    reps.push({ vm: rom / dur, vmp: s / (kFin + 1), vp, rom, dur, i0: j0, i1: j1, i_prop: j0 + kFin });
+  }
+  return reps;
+}
+
+function perdidas(valores) {
+  if (!valores.length) return [];
+  const m = Math.max(...valores);
+  return valores.map(x => m > 0 ? (m - x) / m * 100 : 0);
+}
+if (typeof module !== "undefined") module.exports = { prepararSerie, detectarReps, perdidas, buscarPicos, mediana };
+// ==== FIN NÚCLEO ====
+
+</script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const vid = $("vid"), ov = $("ov"), octx = ov.getContext("2d");
+const wc = document.createElement("canvas"), wctx = wc.getContext("2d", { willReadFrequently: true });
+
+// ---------- estado ----------
+const S = {
+  esCamara: false, stream: null, fuente: "", url: null,
+  vw: 0, vh: 0, ws: 1,
+  modo: null, puntos: [], escala: null, distPx: null, bbox: null, roiIni: null, roiTmp: null,
+  tracking: false, trk: null,
+  t: [], y: [], tray: [], saltados: 0, ultPres: null, ultAnalisis: 0,
+  reps: [], ser: null, info: null,
+  suav: SUAV_DEF, rom: ROM_MIN_DEF, base: "vm", factor: 1,
+  rvfc: null, vista: "analisis",
+};
+const soportaRVFC = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+
+// ---------- utilidades ----------
+function hint(txt, tipo) {
+  const c = { info: "var(--accent)", ok: "var(--ok)", warn: "var(--warn)", error: "var(--danger)" }[tipo || "info"];
+  $("bannerDot").style.color = c; $("bannerTxt").textContent = txt;
+}
+function setPaso(n, estado, txt) {
+  const el = $("paso" + n); el.className = "card paso " + estado; $("s" + n).textContent = txt || "";
+}
+function pasos(fase) {
+  if (fase === "inicio") {
+    setPaso(1, "activo"); setPaso(2, "pendiente"); setPaso(3, "pendiente");
+    hint(S.esCamara ? "Apunta al deportista. Pulsa «Calibrar» para registrar la escala (paso 1)."
+                    : "Elige el instante donde empieza el movimiento y pulsa «Calibrar» (paso 1).");
+  } else if (fase === "calibrando") { setPaso(1, "activo", "haz 2 clics"); hint("Haz clic en los dos extremos del objeto de referencia en la imagen."); }
+  else if (fase === "calibrado") { setPaso(1, "hecho", S.escala.toFixed(5) + " m/px"); setPaso(2, "activo"); hint("Calibración lista. Pulsa «Seleccionar marcador» y toca el extremo de la barra (paso 2).", "ok"); }
+  else if (fase === "seleccionando") { setPaso(2, "activo", "marca el objetivo"); hint("Toca o arrastra sobre la cinta de color en el extremo de la barra para encerrarla."); }
+  else if (fase === "seleccionado") { setPaso(2, "hecho"); setPaso(3, "activo"); }
+  else if (fase === "rastreando") { setPaso(3, "activo", "grabando…"); hint("Rastreando. Pulsa «Detener» cuando termine la última repetición."); }
+  else if (fase === "analizado") { setPaso(3, "hecho", S.reps.length + " reps"); }
+}
+function fmtRes(v, d) { return isFinite(v) ? v.toFixed(d) : "—"; }
+
+// ---------- origen: video / cámara ----------
+async function listarCamaras(pedirPermiso) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  try {
+    if (pedirPermiso) { const s = await navigator.mediaDevices.getUserMedia({ video: true }); s.getTracks().forEach(t => t.stop()); }
+    const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
+    const sel = $("selCam"), actual = sel.value;
+    sel.innerHTML = '<option value="">Cámara predeterminada</option><option value="environment">Trasera (celular)</option><option value="user">Frontal</option>' +
+      devs.map((d, i) => `<option value="${d.deviceId}">${d.label || "Cámara " + (i + 1)}</option>`).join("");
+    if ([...sel.options].some(o => o.value === actual)) sel.value = actual;
+    $("msgInicio").textContent = devs.length ? "" : "No se encontró ninguna cámara.";
+  } catch (e) { $("msgInicio").textContent = "No se pudo acceder a la cámara: " + (e.message || e.name); }
+}
+async function estadoPermiso() {
+  if (!navigator.permissions || !navigator.permissions.query) return null;
+  try { return (await navigator.permissions.query({ name: "camera" })).state; } catch (e) { return null; }
+}
+async function pintarEstado() {
+  const e = $("estadoCam"), st = await estadoPermiso();
+  const m = { granted: ["Permiso de cámara: concedido", "var(--ok)"], denied: ["Permiso de cámara: bloqueado", "var(--danger)"], prompt: ["Permiso de cámara: se pedirá al usarla", "var(--muted)"] }[st];
+  e.textContent = m ? m[0] : "Permiso de cámara: se pedirá al usarla"; e.style.color = m ? m[1] : "var(--muted)";
+  return st;
+}
+function sinCamaraWeb() {
+  return !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || window.isSecureContext === false;
+}
+const AYUDA_SEGURO = "Este navegador no permite pedir la cámara desde aquí (la página no está en una conexión segura). " +
+  "Opciones: (1) usa «Grabar con la cámara del celular», que no necesita permisos; (2) en el PC abre la app desde http://localhost (python -m http.server 8000); " +
+  "(3) publica el archivo en una dirección https (por ejemplo Netlify Drop o GitHub Pages).";
+$("btnDetectar").onclick = async () => {
+  if (sinCamaraWeb()) { $("msgInicio").textContent = AYUDA_SEGURO; return; }
+  await listarCamaras(true); pintarEstado();
+};
+$("btnDiag").onclick = async () => {
+  const pre = $("diagTxt"), L = []; pre.classList.remove("hidden"); pre.textContent = "Comprobando…";
+  const ua = navigator.userAgent;
+  L.push("Dirección: " + location.protocol + "//" + (location.host || "(archivo local)"));
+  L.push("Conexión segura (necesaria para la cámara): " + (window.isSecureContext ? "sí" : "NO"));
+  L.push("API de cámara disponible: " + (navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? "sí" : "NO"));
+  const enApp = /; wv\)|FBAN|FBAV|Instagram|WhatsApp|Line\/|MicroMessenger|GSA\//.test(ua);
+  L.push("Navegador integrado de otra app: " + (enApp ? "SÍ (abre el archivo directamente en Chrome o Safari)" : "no detectado"));
+  L.push("Lectura de tiempos por frame (requestVideoFrameCallback): " + (soportaRVFC ? "sí" : "NO (usa Chrome o Edge actualizados)"));
+  L.push("Permiso de cámara: " + ((await estadoPermiso()) || "no se puede consultar en este navegador"));
+  if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+    try { const d = (await navigator.mediaDevices.enumerateDevices()).filter(x => x.kind === "videoinput"); L.push("Cámaras detectadas: " + d.length + d.map((x, i) => `\n   ${i + 1}. ${x.label || "(sin nombre hasta dar permiso)"}`).join("")); }
+    catch (e) { L.push("No se pudo listar cámaras: " + e.name); }
+  }
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.isSecureContext !== false) {
+    pre.textContent = L.join("\n") + "\nProbando apertura de la cámara…";
+    try { const s = await Promise.race([pedirGum({ video: true }), new Promise((_, r) => setTimeout(() => r(Object.assign(new Error("no respondió en 15 s (¿el aviso de permiso quedó oculto?)"), { name: "Timeout" })), 15000))]);
+      const st = s.getVideoTracks()[0].getSettings(); L.push(`Prueba de apertura: OK (${st.width}×${st.height}${st.frameRate ? " a " + Math.round(st.frameRate) + " FPS" : ""})`); s.getTracks().forEach(t => t.stop()); }
+    catch (e) { L.push("Prueba de apertura: ERROR " + e.name + " — " + (e.message || "")); }
+  }
+  L.push("Navegador: " + ua);
+  pre.textContent = L.join("\n"); pintarEstado();
+};
+$("btnGrabar").onclick = () => $("fileGrabar").click();
+$("fileGrabar").onchange = (e) => { const f = e.target.files[0]; if (f) abrirVideo(f); e.target.value = ""; };
+$("btnVideo").onclick = () => $("fileVideo").click();
+$("fileVideo").onchange = (e) => { const f = e.target.files[0]; if (f) abrirVideo(f); e.target.value = ""; };
+
+function limpiarFuente() {
+  detenerRastreo(false);
+  if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  vid.pause(); vid.srcObject = null; vid.removeAttribute("src"); vid.load();
+  if (S.url) { URL.revokeObjectURL(S.url); S.url = null; }
+}
+function esperarMetadatos() {
+  return new Promise((res, rej) => {
+    if (vid.readyState >= 2 && vid.videoWidth > 0) { res(); return; }   // ya hay imagen
+    const ok = () => { vid.removeEventListener("error", er); res(); };
+    const er = () => { vid.removeEventListener("loadeddata", ok); rej(new Error("No se pudo abrir el video (formato no compatible con el navegador).")); };
+    vid.addEventListener("loadeddata", ok, { once: true }); vid.addEventListener("error", er, { once: true });
+  });
+}
+async function abrirVideo(file) {
+  limpiarFuente(); S.esCamara = false; S.fuente = file.name;
+  S.url = URL.createObjectURL(file); vid.loop = false; vid.src = S.url;
+  try { await esperarMetadatos(); } catch (e) { $("msgInicio").textContent = e.message; return; }
+  entrarAnalisis();
+}
+function mensajeCamara(e) {
+  switch (e && e.name) {
+    case "NotAllowedError": case "SecurityError":
+      return "Permiso de cámara denegado. Toca el candado (o el ícono de cámara) junto a la dirección, o ve a Ajustes del navegador › Permisos del sitio › Cámara, elige «Permitir» y vuelve a pulsar «Usar CÁMARA EN VIVO».";
+    case "NotFoundError": case "DevicesNotFoundError": return "No se encontró ninguna cámara en este dispositivo.";
+    case "NotReadableError": case "TrackStartError": return "No se pudo usar la cámara: otra aplicación (o pestaña) la está usando. Ciérrala e inténtalo de nuevo.";
+    case "AbortError": return "El sistema abortó la apertura de la cámara. Ciérrala en otras apps y vuelve a intentarlo.";
+    default: return "No se pudo abrir la cámara (" + ((e && (e.name + ": " + (e.message || ""))) || "error desconocido") + "). Pulsa «Diagnóstico de cámara» para ver más detalles.";
+  }
+}
+function pedirGum(c) { return navigator.mediaDevices.getUserMedia(c); }
+async function pedirCamara(id) {
+  const alta = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 60 } };
+  const con = (extra) => { const v = Object.assign({}, extra); if (id === "environment" || id === "user") v.facingMode = { ideal: id }; else if (id) v.deviceId = { exact: id }; return v; };
+  // De más a menos exigente: así un límite de resolución/fps o un id viejo no impide abrir la cámara.
+  const intentos = [con(alta), con({ width: { ideal: 1280 }, height: { ideal: 720 } }), con({}), true];
+  let ultimo;
+  for (const v of intentos) {
+    try { return await pedirGum({ video: v, audio: false }); }
+    catch (e) { ultimo = e; if (e && (e.name === "NotAllowedError" || e.name === "SecurityError" || e.name === "NotFoundError")) throw e; }
+  }
+  throw ultimo;
+}
+function esperarImagen(ms) {                 // espera a que el <video> tenga dimensiones reales
+  return new Promise((res, rej) => {
+    const t0 = performance.now();
+    (function chk() {
+      if (vid.videoWidth > 0 && vid.readyState >= 2) return res();
+      if (performance.now() - t0 > ms) return rej(new Error("La cámara se abrió pero no entrega imagen. Cierra otras apps que la usen e inténtalo de nuevo."));
+      setTimeout(chk, 50);
+    })();
+  });
+}
+async function abrirCamara() {
+  limpiarFuente(); S.esCamara = true; S.fuente = "Cámara";
+  const msg = $("msgInicio"); msg.style.color = "var(--muted)"; msg.textContent = "Abriendo la cámara… si aparece un aviso del navegador, elige «Permitir».";
+  const aviso = setTimeout(() => { msg.textContent = "Sigue esperando permiso. Si no ves ningún aviso, revisa los permisos del sitio (candado junto a la dirección) o usa «Grabar con la cámara del celular»."; msg.style.color = "var(--warn)"; }, 8000);
+  let stream;
+  try { stream = await pedirCamara($("selCam").value); }
+  catch (e) { clearTimeout(aviso); msg.style.color = "var(--warn)"; msg.textContent = mensajeCamara(e); pintarEstado(); return; }
+  clearTimeout(aviso); S.stream = stream; vid.srcObject = stream; vid.muted = true;
+  try {
+    const pl = vid.play(); if (pl && pl.catch) pl.catch(() => {});     // no se espera: puede no resolver si no hay imagen
+    await esperarImagen(6000);
+  } catch (e) {
+    stream.getTracks().forEach(t => t.stop()); S.stream = null; vid.srcObject = null;
+    msg.style.color = "var(--warn)"; msg.textContent = (e && e.name === "NotAllowedError") ? "El navegador bloqueó la reproducción del video de la cámara. Toca de nuevo «Usar CÁMARA EN VIVO»." : (e.message || String(e));
+    return;
+  }
+  msg.textContent = "";
+  const pista = stream.getVideoTracks()[0], st = pista.getSettings();
+  S.fuente = "Cámara · " + (pista.label || ""); S.fpsDecl = st.frameRate;
+  pista.addEventListener("ended", () => { if (S.tracking) detenerRastreo(true); hint("La cámara se desconectó o fue cerrada por el sistema.", "error"); });
+  listarCamaras(false); pintarEstado();
+  entrarAnalisis();
+}
+$("btnCam").onclick = async () => {
+  if (sinCamaraWeb()) { $("msgInicio").textContent = AYUDA_SEGURO; return; }
+  const st = await pintarEstado();
+  if (st === "denied") { $("msgInicio").textContent = mensajeCamara({ name: "NotAllowedError" }); return; }
+  abrirCamara();
+};
+$("pNo").onclick = () => { $("dlgPermiso").close(); $("msgInicio").textContent = "Sin permiso de cámara no se puede analizar en vivo. Puedes cargar o grabar un video."; };
+$("pSi").onclick = () => { $("dlgPermiso").close(); abrirCamara(); };
+
+function entrarAnalisis() {
+  S.vw = vid.videoWidth; S.vh = vid.videoHeight;
+  S.ws = Math.min(1, 960 / S.vw);
+  wc.width = Math.round(S.vw * S.ws); wc.height = Math.round(S.vh * S.ws);
+  ov.width = S.vw; ov.height = S.vh;
+  $("inicio").classList.add("hidden"); $("app").classList.remove("hidden");
+  $("chipOrigen").textContent = S.esCamara ? "CÁMARA EN VIVO" : S.fuente;
+  $("chipOrigen").className = "chip" + (S.esCamara ? " live" : "");
+  $("chipRes").textContent = `${S.vw}×${S.vh}`;
+  $("chipFps").textContent = S.esCamara ? (S.fpsDecl ? `~${Math.round(S.fpsDecl)} FPS solicitados` : "EN VIVO") : fmtDur(vid.duration);
+  $("ctrlVideo").classList.toggle("hidden", S.esCamara);
+  $("filaVel").classList.toggle("hidden", S.esCamara);
+  $("lblAyuda").textContent = S.esCamara ? "Asegúrate de que la cámara no se mueva durante todo el análisis."
+                                         : "El análisis comienza en el instante elegido con el deslizador.";
+  if (!S.esCamara) { $("slider").max = vid.duration; $("slider").value = 0; vid.pause(); vid.currentTime = 0; }
+  if (S.esCamara && !soportaRVFC) hint("Este navegador no soporta lectura de tiempos por frame. Usa Chrome o Edge.", "error");
+  reiniciar(true);
+  vista("analisis");
+}
+function fmtDur(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+
+// ---------- navegación ----------
+function vista(v) {
+  S.vista = v;
+  $("vistaAnalisis").classList.toggle("hidden", v !== "analisis");
+  $("graficos").classList.toggle("hidden", v !== "graficos");
+  if (v === "graficos") dibujarGraficos();
+}
+$("btnVolver").onclick = () => {
+  if (S.tracking && !confirm("Hay un rastreo en curso. ¿Detenerlo y volver al inicio?")) return;
+  limpiarFuente(); $("app").classList.add("hidden"); $("inicio").classList.remove("hidden");
+};
+const irGraf = () => { if (S.ser && S.reps.length) vista("graficos"); };
+$("btnGraf").onclick = irGraf; $("btnGraf2").onclick = irGraf;
+$("btnVolverAn").onclick = () => vista("analisis");
+
+// ---------- reproducción del video ----------
+$("slider").oninput = (e) => { if (!S.tracking && !S.esCamara) vid.currentTime = parseFloat(e.target.value); };
+$("btnAtras").onclick = () => { if (!S.tracking) { vid.currentTime = Math.max(0, vid.currentTime - 1 / 30); $("slider").value = vid.currentTime; } };
+$("btnAdel").onclick = () => { if (!S.tracking) { vid.currentTime = Math.min(vid.duration, vid.currentTime + 1 / 30); $("slider").value = vid.currentTime; } };
+vid.addEventListener("seeked", () => { $("lblFrame").textContent = `Instante ${vid.currentTime.toFixed(2)} s de ${vid.duration.toFixed(2)} s`; dibujarOverlay(); });
+window.addEventListener("keydown", (e) => {
+  if (S.esCamara || S.tracking || $("app").classList.contains("hidden") || S.vista !== "analisis" || e.target.tagName === "INPUT") return;
+  if (e.key === "ArrowLeft") $("btnAtras").click(); if (e.key === "ArrowRight") $("btnAdel").click();
+});
+
+// ---------- overlay (calibración, recuadro, trayectoria) ----------
+function dibujarOverlay() {
+  octx.clearRect(0, 0, ov.width, ov.height);
+  const th = Math.max(2, S.vw / 640);
+  const azul = "#3b82f6", verde = "#22c55e";
+  if (S.puntos.length === 2) {
+    octx.strokeStyle = azul; octx.lineWidth = th; octx.beginPath();
+    octx.moveTo(...S.puntos[0]); octx.lineTo(...S.puntos[1]); octx.stroke();
+    octx.fillStyle = azul; octx.font = `${14 * th}px sans-serif`;
+    octx.fillText(`${$("ref").value} m`, (S.puntos[0][0] + S.puntos[1][0]) / 2 + 8, (S.puntos[0][1] + S.puntos[1][1]) / 2 - 10);
+  }
+  for (const p of S.puntos) {
+    octx.beginPath(); octx.arc(p[0], p[1], 4 * th, 0, 7); octx.fillStyle = azul; octx.fill();
+    octx.strokeStyle = "#fff"; octx.lineWidth = th; octx.stroke();
+  }
+  const box = S.roiTmp || S.bbox;
+  if (box && !S.tracking) { octx.strokeStyle = verde; octx.lineWidth = th; octx.strokeRect(...box); }
+  if (S.tray.length > 1) {
+    octx.strokeStyle = "#f59e0b"; octx.lineWidth = th; octx.beginPath();
+    const tr = S.tray.slice(-40); octx.moveTo(...tr[0]); for (const p of tr) octx.lineTo(...p); octx.stroke();
+    const u = S.tray[S.tray.length - 1];
+    octx.strokeStyle = verde; octx.lineWidth = th; octx.strokeRect(u[0] - S.mw / 2, u[1] - S.mh / 2, S.mw, S.mh);
+    octx.beginPath(); octx.arc(u[0], u[1], 3 * th, 0, 7); octx.fillStyle = "#ef4444"; octx.fill();
+  }
+}
+function aNativo(e) {
+  const r = ov.getBoundingClientRect();
+  return [Math.min(Math.max((e.clientX - r.left) * S.vw / r.width, 0), S.vw - 1),
+          Math.min(Math.max((e.clientY - r.top) * S.vh / r.height, 0), S.vh - 1)];
+}
+ov.addEventListener("pointerdown", (e) => {
+  if (S.tracking) return;
+  const p = aNativo(e);
+  if (S.modo === "calib" && S.puntos.length < 2) {
+    S.puntos.push(p); dibujarOverlay();
+    if (S.puntos.length === 2) finalizarCalib();
+  } else if (S.modo === "roi") { S.roiIni = p; S.roiTmp = null; ov.setPointerCapture(e.pointerId); }
+});
+ov.addEventListener("pointermove", (e) => {
+  if (S.modo === "roi" && S.roiIni) {
+    const p = aNativo(e), [x0, y0] = S.roiIni;
+    S.roiTmp = [Math.min(x0, p[0]), Math.min(y0, p[1]), Math.abs(p[0] - x0), Math.abs(p[1] - y0)]; dibujarOverlay();
+  }
+});
+function finalizarRoi() {
+  if (S.modo !== "roi" || !S.roiIni) return;
+  let box = S.roiTmp; const ini = S.roiIni; S.roiIni = null; S.roiTmp = null;
+  if (!box || (box[2] < 14 && box[3] < 14)) { const l = Math.max(40, S.vw * 0.05); box = [Math.max(ini[0] - l / 2, 0), Math.max(ini[1] - l / 2, 0), l, l]; }
+  S.bbox = box; S.modo = null; ov.style.cursor = "default";
+  pasos("seleccionado"); probarMarcador(); dibujarOverlay();
+}
+ov.addEventListener("pointerup", finalizarRoi);
+ov.addEventListener("pointercancel", finalizarRoi);
+
+// ---------- pasos ----------
+$("btnCalib").onclick = () => {
+  S.puntos = []; S.modo = "calib"; S.escala = null; S.bbox = null; ov.style.cursor = "crosshair";
+  $("btnRoi").disabled = true; $("btnTrack").disabled = true; setPaso(2, "pendiente"); setPaso(3, "pendiente");
+  pasos("calibrando"); dibujarOverlay();
+};
+function finalizarCalib() {
+  const ref = parseFloat($("ref").value.replace(",", "."));
+  const [p0, p1] = S.puntos; const d = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+  if (!(ref > 0) || d === 0) { alert(!(ref > 0) ? "La referencia debe ser un número positivo (metros)." : "Distancia cero entre los puntos."); S.puntos = []; dibujarOverlay(); return; }
+  S.distPx = d; S.escala = ref / d; S.modo = null; ov.style.cursor = "default"; $("btnRoi").disabled = false;
+  pasos("calibrado");
+  if (d < 250) hint(`Calibración lista, pero la referencia mide solo ${d.toFixed(0)} px: el error de escala puede llegar a ±${(141 / d).toFixed(1)} %. Acerca la cámara o usa más zoom para calibrar mejor.`, "warn");
+}
+$("btnRoi").onclick = () => { S.bbox = null; S.modo = "roi"; ov.style.cursor = "crosshair"; $("btnTrack").disabled = true; pasos("seleccionando"); dibujarOverlay(); };
+
+// ---------- tracker híbrido (Color + Plantilla Visual para barra/disco sin cinta) ----------
+function rgb2hsv(r, g, b) {                 // escala OpenCV: H 0-179, S y V 0-255
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0;
+  if (d > 0) {
+    if (mx === r) h = 60 * (((g - b) / d) % 6); else if (mx === g) h = 60 * ((b - r) / d + 2); else h = 60 * ((r - g) / d + 4);
+    if (h < 0) h += 360;
+  }
+  return [h / 2, mx ? d / mx * 255 : 0, mx];
+}
+
+class TrackerColor {
+  constructor() { this.tipo = "Color"; this.h0 = 0; this.tol = 14; this.sMin = 70; this.vMin = 70; this.w = 0; this.h = 0; this.cx = 0; this.cy = 0;
+    this.areaMin = 3; this.perdidos = 0; this.resumen = ""; this.aviso = ""; this.box0 = null; }
+  mascara(img, w, h) {
+    const d = img.data, m = new Uint8Array(w * h);
+    for (let i = 0, p = 0; i < m.length; i++, p += 4) {
+      const [hh, s, v] = rgb2hsv(d[p], d[p + 1], d[p + 2]);
+      if (s >= this.sMin && v >= this.vMin) {
+        let dh = Math.abs(hh - this.h0); if (dh > 90) dh = 180 - dh;
+        if (dh <= this.tol) m[i] = 1;
+      }
+    }
+    return m;
+  }
+  componentes(m, w, h, areaMin) {
+    const vis = new Uint8Array(w * h), out = [], pila = new Int32Array(w * h);
+    for (let i = 0; i < m.length; i++) {
+      if (!m[i] || vis[i]) continue;
+      let sp = 0; pila[sp++] = i; vis[i] = 1;
+      let area = 0, sx = 0, sy = 0, x0 = w, x1 = 0, y0 = h, y1 = 0;
+      while (sp) {
+        const q = pila[--sp], x = q % w, y = (q / w) | 0;
+        area++; sx += x; sy += y; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const nq = ny * w + nx;
+          if (m[nq] && !vis[nq]) { vis[nq] = 1; pila[sp++] = nq; }
+        }
+      }
+      if (area >= areaMin) out.push({ area, cx: sx / area + 0.5, cy: sy / area + 0.5, w: x1 - x0 + 1, h: y1 - y0 + 1 });
+    }
+    return out;
+  }
+  init(ctx, W, H, bb) {
+    const x0 = Math.max(Math.floor(bb[0]), 0), y0 = Math.max(Math.floor(bb[1]), 0);
+    const x1 = Math.min(Math.ceil(bb[0] + bb[2]), W), y1 = Math.min(Math.ceil(bb[1] + bb[3]), H);
+    if (x1 - x0 < 2 || y1 - y0 < 2) throw new Error("El recuadro está fuera de la imagen.");
+    const roi = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+    const hs = [], ss = [], vs = [];
+    for (let p = 0; p < roi.length; p += 4) {
+      const [h, s, v] = rgb2hsv(roi[p], roi[p + 1], roi[p + 2]);
+      if (s >= 90 && v >= 90) { hs.push(h); ss.push(s); vs.push(v); }
+    }
+    if (hs.length < 10) throw new Error("SIN_COLOR");
+    let sa = 0, ca = 0; for (const h of hs) { const a = h * 2 * Math.PI / 180; sa += Math.sin(a); ca += Math.cos(a); }
+    this.h0 = ((Math.atan2(sa / hs.length, ca / hs.length) * 180 / Math.PI) / 2 + 180) % 180;
+    this.sMin = Math.max(65, 0.6 * mediana(ss)); this.vMin = Math.max(65, 0.6 * mediana(vs));
+    const full = ctx.getImageData(0, 0, W, H);
+    const comps = this.componentes(this.mascara(full, W, H), W, H, 4);
+    const dentro = comps.filter(c => c.cx >= x0 && c.cx <= x1 && c.cy >= y0 && c.cy <= y1);
+    if (!dentro.length) throw new Error("SIN_COLOR");
+    const c = dentro.reduce((a, b) => b.area > a.area ? b : a);
+    this.w = c.w; this.h = c.h; this.cx = c.cx; this.cy = c.cy; this.areaMin = Math.max(3, 0.2 * c.area);
+    this.box0 = { cx: c.cx, cy: c.cy, w: c.w, h: c.h };
+    if (comps.some(o => !dentro.includes(o) && o.area >= 0.5 * c.area))
+      this.aviso = "Hay otros objetos del mismo color en la imagen; pueden confundir el seguimiento.";
+    this.resumen = `Color (tono ${this.h0.toFixed(0)}±${this.tol}, ${c.area} px)`;
+  }
+  update(ctx, W, H) {
+    const half = Math.max(4 * Math.max(this.w, this.h), 80) * Math.pow(2, Math.min(this.perdidos, 3));
+    const x0 = Math.floor(Math.max(this.cx - half, 0)), x1 = Math.ceil(Math.min(this.cx + half, W));
+    const y0 = Math.floor(Math.max(this.cy - half, 0)), y1 = Math.ceil(Math.min(this.cy + half, H));
+    if (x1 - x0 >= 2 && y1 - y0 >= 2) {
+      const w = x1 - x0, h = y1 - y0;
+      const comps = this.componentes(this.mascara(ctx.getImageData(x0, y0, w, h), w, h), w, h, this.areaMin);
+      if (comps.length) {
+        const c = comps.reduce((a, b) => b.area > a.area ? b : a);
+        this.cx = c.cx + x0; this.cy = c.cy + y0; this.w = c.w; this.h = c.h; this.perdidos = 0;
+        return true;
+      }
+    }
+    this.perdidos++; return false;
+  }
+}
+
+class TrackerPlantilla {
+  constructor() { this.tipo = "Visual"; this.w = 24; this.h = 24; this.cx = 0; this.cy = 0;
+    this.tpl = null; this.tw = 0; this.th = 0; this.perdidos = 0; this.resumen = ""; this.aviso = ""; }
+  aGris(imgData) {
+    const d = imgData.data, n = imgData.width * imgData.height, g = new Float32Array(n);
+    for (let i = 0, p = 0; i < n; i++, p += 4) g[i] = 0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2];
+    return g;
+  }
+  normalizar(arr) {
+    let s = 0; for (let i = 0; i < arr.length; i++) s += arr[i];
+    const m = s / arr.length;
+    let v = 0; for (let i = 0; i < arr.length; i++) { const d = arr[i] - m; v += d * d; }
+    const std = Math.sqrt(v / arr.length) || 1;
+    const out = new Float32Array(arr.length);
+    for (let i = 0; i < arr.length; i++) out[i] = (arr[i] - m) / std;
+    return { norm: out, std };
+  }
+  init(ctx, W, H, bb) {
+    const cx = bb[0] + bb[2] / 2, cy = bb[1] + bb[3] / 2;
+    const tw = Math.min(Math.max(Math.round(bb[2]), 18), 44);
+    const th = Math.min(Math.max(Math.round(bb[3]), 18), 44);
+    const x0 = Math.max(Math.min(Math.round(cx - tw / 2), W - tw), 0);
+    const y0 = Math.max(Math.min(Math.round(cy - th / 2), H - th), 0);
+    const gris = this.aGris(ctx.getImageData(x0, y0, tw, th));
+    const { norm, std } = this.normalizar(gris);
+    if (std < 6) throw new Error("La zona elegida es muy uniforme (sin bordes). Toca justo el borde del extremo de la barra o el disco.");
+    this.tpl = norm; this.tw = tw; this.th = th;
+    this.w = tw; this.h = th; this.cx = x0 + tw / 2; this.cy = y0 + th / 2;
+    this.resumen = `Patrón visual (${tw}×${th} px)`;
+    this.aviso = "Modo sin cinta de color: asegúrate de que haya buen contraste entre la barra y el fondo.";
+  }
+  update(ctx, W, H) {
+    const radio = Math.max(45, Math.max(this.tw, this.th) * 2.2) * (1 + 0.4 * Math.min(this.perdidos, 3));
+    const sx0 = Math.max(0, Math.floor(this.cx - radio - this.tw / 2));
+    const sy0 = Math.max(0, Math.floor(this.cy - radio - this.th / 2));
+    const sx1 = Math.min(W, Math.ceil(this.cx + radio + this.tw / 2));
+    const sy1 = Math.min(H, Math.ceil(this.cy + radio + this.th / 2));
+    const sw = sx1 - sx0, sh = sy1 - sy0;
+    if (sw < this.tw || sh < this.th) { this.perdidos++; return false; }
+    const img = this.aGris(ctx.getImageData(sx0, sy0, sw, sh));
+    const maxX = sw - this.tw, maxY = sh - this.th, N = this.tw * this.th;
+    let bestCorr = -Infinity, bx = 0, by = 0;
+    // Búsqueda gruesa (paso 2) + refinamiento fino (paso 1)
+    for (let y = 0; y <= maxY; y += 2) {
+      for (let x = 0; x <= maxX; x += 2) {
+        const c = this.ncc(img, sw, x, y, N);
+        if (c > bestCorr) { bestCorr = c; bx = x; by = y; }
+      }
+    }
+    const rx0 = Math.max(0, bx - 2), rx1 = Math.min(maxX, bx + 2);
+    const ry0 = Math.max(0, by - 2), ry1 = Math.min(maxY, by + 2);
+    for (let y = ry0; y <= ry1; y++) {
+      for (let x = rx0; x <= rx1; x++) {
+        const c = this.ncc(img, sw, x, y, N);
+        if (c > bestCorr) { bestCorr = c; bx = x; by = y; }
+      }
+    }
+    if (bestCorr < 0.45) { this.perdidos++; return false; }
+    const ncx = sx0 + bx + this.tw / 2, ncy = sy0 + by + this.th / 2;
+    // Actualización suave de plantilla (90% original, 10% actual) para evitar deriva
+    const patch = new Float32Array(N);
+    for (let j = 0; j < this.th; j++) {
+      const row = (by + j) * sw + bx;
+      for (let i = 0; i < this.tw; i++) patch[j * this.tw + i] = img[row + i];
+    }
+    const { norm } = this.normalizar(patch);
+    for (let k = 0; k < N; k++) this.tpl[k] = 0.92 * this.tpl[k] + 0.08 * norm[k];
+    this.cx = ncx; this.cy = ncy; this.perdidos = 0;
+    return true;
+  }
+  ncc(img, sw, x0, y0, N) {
+    let sum = 0, sumSq = 0, dot = 0;
+    for (let j = 0; j < this.th; j++) {
+      const rImg = (y0 + j) * sw + x0, rTpl = j * this.tw;
+      for (let i = 0; i < this.tw; i++) {
+        const v = img[rImg + i];
+        sum += v; sumSq += v * v; dot += v * this.tpl[rTpl + i];
+      }
+    }
+    const mean = sum / N;
+    const variance = sumSq / N - mean * mean;
+    if (variance < 16) return -1;
+    return dot / (N * Math.sqrt(variance));
+  }
+}
+
+function crearTracker(ctx, W, H, bb) {
+  try {
+    const tc = new TrackerColor();
+    tc.init(ctx, W, H, bb);
+    return tc;
+  } catch (e) {
+    if (e.message !== "SIN_COLOR") throw e;
+    const tp = new TrackerPlantilla();
+    tp.init(ctx, W, H, bb);
+    return tp;
+  }
+}
+
+function probarMarcador() {
+  try {
+    if (!S.esCamara) vid.pause();
+    wctx.drawImage(vid, 0, 0, wc.width, wc.height);
+    const b = S.bbox.map(v => v * S.ws);
+    const t = crearTracker(wctx, wc.width, wc.height, b);
+    // Ajustar el bbox al centro real detectado para feedback visual claro
+    S.bbox = [(t.cx - t.w / 2) / S.ws, (t.cy - t.h / 2) / S.ws, t.w / S.ws, t.h / S.ws];
+    setPaso(2, "hecho", t.tipo);
+    hint(`Punto fijado (${t.resumen}). Pulsa «Iniciar rastreo».` + (t.aviso ? "  ⚠ " + t.aviso : ""), t.aviso ? "warn" : "ok");
+    $("btnTrack").disabled = false;
+  } catch (e) {
+    S.bbox = null; $("btnTrack").disabled = true; setPaso(2, "activo", "reintenta"); hint(e.message, "error");
+  }
+}
+
+// ---------- rastreo ----------
+$("btnTrack").onclick = iniciarRastreo; $("btnStop").onclick = () => detenerRastreo(true);
+async function iniciarRastreo() {
+  if (!soportaRVFC) { alert("Este navegador no soporta requestVideoFrameCallback. Usa Chrome o Edge actualizados."); return; }
+  vid.pause();
+  wctx.drawImage(vid, 0, 0, wc.width, wc.height);
+  let trk;
+  try { trk = crearTracker(wctx, wc.width, wc.height, S.bbox.map(v => v * S.ws)); } catch (e) { alert(e.message); return; }
+  S.trk = trk; S.t = []; S.y = []; S.tray = []; S.saltados = 0; S.ultPres = null; S.ultAnalisis = 0; S.reps = []; S.ser = null;
+  S.mw = trk.w / S.ws; S.mh = trk.h / S.ws; S.tracking = true;
+  limpiarResultados();
+  for (const id of ["btnCalib", "btnRoi", "btnTrack", "btnAtras", "btnAdel"]) $(id).disabled = true;
+  $("slider").disabled = true; $("btnStop").disabled = false; $("lblTracker").textContent = "Tracker: " + trk.resumen;
+  pasos("rastreando");
+  if (S.esCamara) { S.t0 = null; $("prog").removeAttribute("value"); $("lblPct").textContent = "Grabando…"; }
+  else { $("prog").max = vid.duration; $("prog").value = vid.currentTime;
+         vid.playbackRate = parseFloat($("selVel").value); vid.muted = true; vid.onended = () => detenerRastreo(true);
+         try { await vid.play(); } catch (e) { alert("No se pudo reproducir el video: " + e.message); detenerRastreo(false); return; } }
+  S.rvfc = vid.requestVideoFrameCallback(alFrame);
+}
+function alFrame(now, md) {
+  if (!S.tracking) return;
+  let t;
+  if (S.esCamara) t = (md.captureTime !== undefined ? md.captureTime : (md.expectedDisplayTime !== undefined ? md.expectedDisplayTime : now)) / 1000;
+  else t = md.mediaTime;
+  if (S.ultPres !== null && md.presentedFrames !== undefined && md.presentedFrames - S.ultPres > 1) S.saltados += md.presentedFrames - S.ultPres - 1;
+  if (md.presentedFrames !== undefined) S.ultPres = md.presentedFrames;
+  const ult = S.t.length ? S.t[S.t.length - 1] : -Infinity;
+  if (t > ult) {
+    wctx.drawImage(vid, 0, 0, wc.width, wc.height);
+    const ok = S.trk.update(wctx, wc.width, wc.height);
+    S.t.push(t);
+    if (ok) {
+      const cxN = S.trk.cx / S.ws, cyN = S.trk.cy / S.ws;
+      S.y.push((S.vh - cyN) * S.escala); S.tray.push([cxN, cyN]); S.mw = S.trk.w / S.ws; S.mh = S.trk.h / S.ws;
+    } else S.y.push(NaN);
+    dibujarOverlay();
+    if (!S.esCamara) { $("prog").value = vid.currentTime; $("lblPct").textContent = Math.min(100, Math.round(vid.currentTime / vid.duration * 100)) + " %"; }
+    const ahora = performance.now();
+    if (ahora - S.ultAnalisis > 500 && S.t.length > 30) { S.ultAnalisis = ahora; try { analizarParcial(); } catch (e) {} }
+  }
+  S.rvfc = vid.requestVideoFrameCallback(alFrame);
+}
+function detenerRastreo(analizar) {
+  if (!S.tracking) return;
+  S.tracking = false;
+  if (S.rvfc !== null && vid.cancelVideoFrameCallback) try { vid.cancelVideoFrameCallback(S.rvfc); } catch (e) {}
+  vid.onended = null;
+  if (!S.esCamara) vid.pause();
+  $("btnStop").disabled = true; $("slider").disabled = false;
+  for (const id of ["btnCalib", "btnRoi", "btnTrack", "btnAtras", "btnAdel"]) $(id).disabled = false;
+  $("btnRoi").disabled = !S.escala; $("btnTrack").disabled = !S.escala || !S.bbox;
+  if (S.esCamara) { $("prog").value = 100; $("lblPct").textContent = "Análisis completado"; }
+  if (analizar) analizar_();
+}
+
+// ---------- análisis ----------
+function tiempos() {
+  if (!S.t.length) return [];
+  const t0 = S.t[0], f = S.esCamara ? 1 : (S.factor || 1);
+  return S.t.map(v => (v - t0) / f);
+}
+function calcular(parcial) {
+  if (S.t.length < 15) return { reps: [], ser: null };
+  const ser = prepararSerie(tiempos(), S.y, S.suav);
+  if (!ser) return { reps: [], ser: null };
+  return { reps: detectarReps(ser, S.rom, parcial), ser };
+}
+function analizarParcial() {
+  const r = calcular(true);
+  if (r.reps.length !== S.nLive) { S.nLive = r.reps.length; S.reps = r.reps; tabla(r.reps); }
+}
+function diagnostico(ser) {
+  const av = [], n = S.y.length, perd = S.y.filter(v => !isFinite(v)).length;
+  if (ser) {
+    const dts = []; for (let i = 1; i < S.t.length; i++) dts.push(S.t[i] - S.t[i - 1]);
+    const med = mediana(dts), irr = dts.filter(d => Math.abs(d / med - 1) > 0.25).length / dts.length;
+    if (S.esCamara && irr > 0.10) av.push(`La cámara entrega frames irregulares (${(irr * 100).toFixed(0)} %); se corrige re-muestreando con el reloj real.`);
+    if (!S.esCamara && irr >= 0.02) av.push(`El video tiene fps variable (${(irr * 100).toFixed(0)} % de frames irregulares); se usan los tiempos reales del archivo.`);
+    if (ser.fps < 50) av.push(`Con ${ser.fps.toFixed(0)} FPS la velocidad pico y la duración tienen más error; para validar conviene grabar a 60 FPS o más.`);
+    if (ser.hueco_max_s > 0.15) av.push(`Hay un hueco de ${ser.hueco_max_s.toFixed(2)} s sin datos (se interpoló).`);
+    $("lblDiag").textContent = `Tiempo: ${S.esCamara ? "reloj de captura" : "marcas del video"} · ${ser.fps.toFixed(1)} FPS efectivos · perdidos ${perd}/${n} · ruido ≈ ${ser.ruido_mm.toFixed(1)} mm · ventana ${ser.ventana} muestras`;
+  }
+  if (n && perd / n > 0.01) av.push(`El seguimiento perdió el marcador en ${perd} de ${n} frames (${(perd / n * 100).toFixed(1)} %).`);
+  if (S.saltados > 0) av.push(`El navegador omitió ${S.saltados} frames durante el análisis; baja la velocidad de reproducción (0.25×) o usa un equipo más rápido.`);
+  return av;
+}
+function analizar_() {
+  const { reps, ser } = calcular(false);
+  S.reps = reps; S.ser = ser; S.nLive = reps.length; tabla(reps);
+  const av = diagnostico(ser), extra = av.length ? "  ⚠ " + av.slice(0, 2).join("  ⚠ ") : "";
+  $("btnSerie").disabled = !ser;
+  if (!ser) { setPaso(3, "activo", "sin datos"); hint("Se perdió el seguimiento o hay muy pocos datos. Reintenta con otra selección." + extra, "error"); return; }
+  if (!reps.length) { setPaso(3, "activo", "0 reps"); hint(`No se detectaron repeticiones completas (recorrido mínimo ${(S.rom * 100).toFixed(0)} cm).` + extra, "warn"); $("btnGraf").disabled = $("btnGraf2").disabled = $("btnCsv").disabled = true; return; }
+  $("btnGraf").disabled = $("btnGraf2").disabled = $("btnCsv").disabled = false;
+  pasos("analizado"); hint(`Análisis completo: ${reps.length} repetición(es) detectada(s).` + extra, av.length ? "warn" : "ok");
+  if (S.vista === "graficos") dibujarGraficos(); else vista("graficos");
+}
+function limpiarResultados() {
+  $("tbody").innerHTML = ""; for (const id of ["kReps", "kVm", "kVmax", "kPerd"]) { $(id).textContent = "—"; $(id).style.color = ""; }
+  $("btnGraf").disabled = $("btnGraf2").disabled = $("btnCsv").disabled = $("btnSerie").disabled = true; $("lblDiag").textContent = ""; S.nLive = 0;
+}
+function tabla(reps) {
+  const tb = $("tbody"); tb.innerHTML = "";
+  if (!reps.length) { for (const id of ["kReps", "kVm", "kVmax", "kPerd"]) $(id).textContent = "—"; return; }
+  const perd = perdidas(reps.map(r => r[S.base]));
+  reps.forEach((r, i) => {
+    const p = perd[i], tr = document.createElement("tr"); tr.className = p >= 35 ? "bad" : p >= 20 ? "warn" : "";
+    tr.innerHTML = `<td>${i + 1}</td><td>${r.vm.toFixed(2)}</td><td>${r.vmp.toFixed(2)}</td><td>${r.vp.toFixed(2)}</td><td>${r.rom.toFixed(2)}</td><td>${p.toFixed(1)}</td>`;
+    tb.appendChild(tr);
+  });
+  const pm = Math.max(...perd);
+  $("kReps").textContent = reps.length;
+  $("kVm").textContent = (reps.reduce((a, r) => a + r.vm, 0) / reps.length).toFixed(2);
+  $("kVmax").textContent = Math.max(...reps.map(r => r.vm)).toFixed(2);
+  $("kPerd").textContent = pm.toFixed(0) + " %"; $("kPerd").style.color = pm >= 35 ? "var(--danger)" : pm >= 20 ? "var(--warn)" : "var(--ok)";
+  tb.parentElement.scrollTop = tb.parentElement.scrollHeight;
+}
+
+// ---------- ajustes ----------
+$("btnAjustes").onclick = () => { $("aSuav").value = S.suav; $("aBase").value = S.base; $("aRom").value = S.rom; $("aFactor").value = S.factor; $("dlgAjustes").showModal(); };
+$("aCerrar").onclick = () => $("dlgAjustes").close();
+$("aAplicar").onclick = () => {
+  const num = (id, def, lo, hi) => { const v = parseFloat(String($(id).value).replace(",", ".")); return isFinite(v) ? Math.min(Math.max(v, lo), hi) : def; };
+  S.suav = num("aSuav", SUAV_DEF, 0.05, 0.6); S.rom = num("aRom", ROM_MIN_DEF, 0.02, 1); S.factor = num("aFactor", 1, 0.1, 1000); S.base = $("aBase").value;
+  $("dlgAjustes").close();
+  if (!S.tracking && S.t.length) { const prev = S.vista; analizar_(); if (prev === "analisis" && S.vista === "graficos") { /* analizar_ ya abre gráficos */ } }
+};
+
+// ---------- gráficos ----------
+function dibujarGraficos() {
+  const cv = $("cvGraf"), dpr = window.devicePixelRatio || 1, W = 1100, H = 860;
+  cv.width = W * dpr; cv.height = H * dpr; const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  g.fillStyle = "#151b23"; g.fillRect(0, 0, W, H);
+  if (!S.ser) return;
+  const { t, y, v, y_raw } = S.ser, reps = S.reps, base = Math.min(...y);
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const ok = css("--ok"), warn = css("--warn"), bad = css("--danger"), acc = css("--accent"), mut = css("--muted"), bor = css("--border"), txt = css("--text");
+  const T = t[t.length - 1];
+  function panel(x, yy, w, h, ymin, ymax, titulo, ylab, xlab) {
+    g.strokeStyle = bor; g.fillStyle = mut; g.font = "12px Segoe UI, sans-serif"; g.lineWidth = 1;
+    const nt = 5;
+    for (let i = 0; i <= nt; i++) {
+      const val = ymin + (ymax - ymin) * i / nt, py = yy + h - h * i / nt;
+      g.beginPath(); g.moveTo(x, py); g.lineTo(x + w, py); g.stroke(); g.textAlign = "right"; g.fillText(val.toFixed(2), x - 6, py + 4);
+    }
+    g.strokeRect(x, yy, w, h); g.textAlign = "left"; g.fillStyle = txt; g.font = "bold 14px Segoe UI, sans-serif"; g.fillText(titulo, x, yy - 10);
+    g.save(); g.translate(x - 48, yy + h / 2); g.rotate(-Math.PI / 2); g.fillStyle = mut; g.font = "12px Segoe UI, sans-serif"; g.textAlign = "center"; g.fillText(ylab, 0, 0); g.restore();
+    return { X: (tt) => x + tt / T * w, Y: (val) => yy + h - (val - ymin) / (ymax - ymin) * h };
+  }
+  function ticksX(x, yy, w, h, lab) {
+    g.fillStyle = mut; g.font = "12px Segoe UI, sans-serif"; g.textAlign = "center";
+    const paso = T > 20 ? 5 : T > 8 ? 2 : 1;
+    for (let s = 0; s <= T; s += paso) g.fillText(s.toFixed(0), x + s / T * w, yy + h + 16);
+    if (lab) g.fillText("Tiempo (s)", x + w / 2, yy + h + 34);
+  }
+  const L = 70, Wd = W - L - 30;
+  // posición
+  const alt = Array.from(y, q => q - base), raw = Array.from(y_raw, q => q - base);
+  const ymax1 = Math.max(...raw, ...alt) * 1.12 || 1;
+  let p = panel(L, 40, Wd, 270, 0, ymax1, "Cinemática de la barra", "Altura (m)");
+  reps.forEach((r, i) => { g.fillStyle = "rgba(34,197,94,.16)"; g.fillRect(p.X(t[r.i0]), 40, p.X(t[r.i1]) - p.X(t[r.i0]), 270);
+    g.fillStyle = txt; g.font = "bold 12px Segoe UI, sans-serif"; g.textAlign = "center"; g.fillText("R" + (i + 1), p.X(t[r.i1]), p.Y(alt[r.i1]) - 8); });
+  const linea = (arr, P, col, lw) => { g.beginPath(); g.strokeStyle = col; g.lineWidth = lw; for (let i = 0; i < t.length; i++) { const px = P.X(t[i]), py = P.Y(arr[i]); i ? g.lineTo(px, py) : g.moveTo(px, py); } g.stroke(); };
+  linea(raw, p, mut, 1); linea(alt, p, acc, 2.2);
+  g.fillStyle = mut; g.font = "12px Segoe UI, sans-serif"; g.textAlign = "left"; g.fillText("— posición medida   ", L + Wd - 330, 56); g.fillStyle = acc; g.fillText("— posición suavizada   ", L + Wd - 200, 56);
+  // velocidad
+  const vmin = Math.min(...v, 0) * 1.15 - 0.05, vmax = Math.max(...v) * 1.15 + 0.05;
+  p = panel(L, 370, Wd, 250, vmin, vmax, "Velocidad vertical", "Velocidad (m/s)");
+  reps.forEach(r => { g.fillStyle = "rgba(245,158,11,.14)"; g.fillRect(p.X(t[r.i0]), 370, p.X(t[r.i_prop]) - p.X(t[r.i0]), 250); });
+  g.strokeStyle = mut; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(L, p.Y(0)); g.lineTo(L + Wd, p.Y(0)); g.stroke(); g.setLineDash([]);
+  linea(v, p, "#a78bfa", 1.8); ticksX(L, 370, Wd, 250, true);
+  g.fillStyle = warn; g.textAlign = "left"; g.fillText("■ fase propulsiva", L + Wd - 140, 386);
+  // barras
+  const vals = reps.map(r => r[S.base]), pr = perdidas(vals), vps = reps.map(r => r.vp), ymax3 = Math.max(...vps, ...vals) * 1.2;
+  const nombre = S.base === "vmp" ? "media propulsiva (VMP)" : "media concéntrica (VM)";
+  p = panel(L, 700, Wd, 120, 0, ymax3, `Velocidad ${nombre} por repetición`, "m/s");
+  const bw = Math.min(70, Wd / vals.length * 0.55);
+  vals.forEach((val, i) => {
+    const cx = L + Wd * (i + 0.5) / vals.length, top = p.Y(val);
+    g.fillStyle = pr[i] >= 35 ? bad : pr[i] >= 20 ? warn : ok; g.fillRect(cx - bw / 2, top, bw, p.Y(0) - top);
+    g.fillStyle = "#000"; g.font = "bold 12px Segoe UI, sans-serif"; g.textAlign = "center"; g.fillText(val.toFixed(2), cx, Math.min(top + 16, p.Y(0) - 4));
+    g.fillStyle = txt; g.beginPath(); const py = p.Y(vps[i]); g.moveTo(cx - 6, py - 7); g.lineTo(cx + 6, py - 7); g.lineTo(cx, py + 1); g.fill();
+    g.fillStyle = mut; g.fillText("Rep " + (i + 1), cx, 700 + 120 + 16);
+  });
+  g.fillStyle = txt; g.textAlign = "left"; g.font = "12px Segoe UI, sans-serif"; g.fillText("▼ velocidad pico (VP)", L + Wd - 150, 716);
+}
+$("btnImg").onclick = () => $("cvGraf").toBlob((b) => descargar(b, "graficos_vbt.png"));
+
+// ---------- exportar ----------
+function descargar(blob, nombre) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function csv(filas) { return new Blob(["﻿" + filas.map(f => f.join(";")).join("\r\n")], { type: "text/csv;charset=utf-8" }); }
+$("btnCsv").onclick = () => {
+  if (!S.reps.length) return;
+  const pa = perdidas(S.reps.map(r => r.vm)), pb = perdidas(S.reps.map(r => r.vmp));
+  const f = [["Rep", "VM (m/s)", "VMP (m/s)", "VP (m/s)", "ROM (m)", "Duración concéntrica (s)", "Pérdida VM (%)", "Pérdida VMP (%)"]];
+  S.reps.forEach((r, i) => f.push([i + 1, r.vm.toFixed(3), r.vmp.toFixed(3), r.vp.toFixed(3), r.rom.toFixed(3), r.dur.toFixed(3), pa[i].toFixed(1), pb[i].toFixed(1)]));
+  descargar(csv(f), "resultados_vbt.csv");
+};
+$("btnSerie").onclick = () => {
+  const s = S.ser; if (!s) return;
+  const id = new Array(s.t.length).fill(0); S.reps.forEach((r, i) => { for (let k = r.i0; k <= r.i1; k++) id[k] = i + 1; });
+  const f = [["# fuente", S.fuente], ["# escala_m_px", S.escala ? S.escala.toFixed(6) : ""], ["# metodo_tiempo", S.esCamara ? "reloj de captura" : "marcas del video"],
+    ["# fps_efectivos", s.fps.toFixed(3)], ["# ventana_suavizado_s", (s.ventana * s.dt).toFixed(3)],
+    ["t (s)", "altura cruda (m)", "altura suave (m)", "velocidad (m/s)", "aceleracion (m/s2)", "rep concentrica (0 = fuera)"]];
+  for (let k = 0; k < s.t.length; k++) f.push([s.t[k].toFixed(4), s.y_raw[k].toFixed(5), s.y[k].toFixed(5), s.v[k].toFixed(4), s.a[k].toFixed(3), id[k]]);
+  descargar(csv(f), "serie_vbt.csv");
+};
+
+// ---------- reiniciar ----------
+function reiniciar(silencioso) {
+  if (S.tracking) return;
+  S.puntos = []; S.bbox = null; S.escala = null; S.modo = null; S.t = []; S.y = []; S.tray = []; S.reps = []; S.ser = null;
+  ov.style.cursor = "default"; limpiarResultados(); $("btnRoi").disabled = true; $("btnTrack").disabled = true;
+  $("prog").value = 0; $("prog").max = 100; $("lblPct").textContent = "0 %"; $("lblTracker").textContent = "Tracker: —";
+  pasos("inicio"); dibujarOverlay();
+}
+$("btnReiniciar").onclick = () => { reiniciar(); vista("analisis"); };
+
+listarCamaras(false); pintarEstado();
+if (sinCamaraWeb()) $("msgInicio").textContent = AYUDA_SEGURO;
+</script>
+</body>
+</html>
