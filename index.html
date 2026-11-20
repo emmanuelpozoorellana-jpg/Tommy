@@ -613,7 +613,7 @@ $("pSi").onclick = () => { $("dlgPermiso").close(); abrirCamara(); };
 
 function entrarAnalisis() {
   S.vw = vid.videoWidth; S.vh = vid.videoHeight;
-  S.ws = Math.min(1, 960 / S.vw);
+  S.ws = Math.min(1, 640 / S.vw);
   wc.width = Math.round(S.vw * S.ws); wc.height = Math.round(S.vh * S.ws);
   ov.width = S.vw; ov.height = S.vh;
   $("inicio").classList.add("hidden"); $("app").classList.remove("hidden");
@@ -846,7 +846,7 @@ class TrackerPlantilla {
     this.aviso = "Modo sin cinta de color: asegúrate de que haya buen contraste entre la barra y el fondo.";
   }
   update(ctx, W, H) {
-    const radio = Math.max(45, Math.max(this.tw, this.th) * 2.2) * (1 + 0.4 * Math.min(this.perdidos, 3));
+    const radio = Math.max(36, Math.max(this.tw, this.th) * 1.8) * (1 + 0.25 * Math.min(this.perdidos, 2));
     const sx0 = Math.max(0, Math.floor(this.cx - radio - this.tw / 2));
     const sy0 = Math.max(0, Math.floor(this.cy - radio - this.th / 2));
     const sx1 = Math.min(W, Math.ceil(this.cx + radio + this.tw / 2));
@@ -933,7 +933,8 @@ function probarMarcador() {
 $("btnTrack").onclick = iniciarRastreo; $("btnStop").onclick = () => detenerRastreo(true);
 async function iniciarRastreo() {
   if (!soportaRVFC) { alert("Este navegador no soporta requestVideoFrameCallback. Usa Chrome o Edge actualizados."); return; }
-  vid.pause();
+  if (!S.esCamara) vid.pause();
+  else if (vid.paused) { try { await vid.play(); } catch (e) {} }
   wctx.drawImage(vid, 0, 0, wc.width, wc.height);
   let trk;
   try { trk = crearTracker(wctx, wc.width, wc.height, S.bbox.map(v => v * S.ws)); } catch (e) { alert(e.message); return; }
